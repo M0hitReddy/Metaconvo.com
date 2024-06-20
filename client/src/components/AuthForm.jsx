@@ -16,7 +16,7 @@ export function AuthForm({ className, ...props }) {
     // console.log(loggedIn);
     React.useEffect(() => {
         if (loggedIn) {
-            // console.log('logged in')
+            console.log('logged in')
             navigate('/')
         };
     }, [loggedIn])

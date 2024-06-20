@@ -1,18 +1,10 @@
 import * as React from "react"
 import {
-  AlertCircle,
+  MessageCirclePlus,
   Archive,
   ArchiveX,
-  File,
-  Inbox,
-  MessagesSquare,
   Search,
-  Send,
-  ShoppingCart,
   Trash2,
-  Users2,
-} from "lucide-react"
-import {
   Book,
   Bot,
   Code2,
@@ -35,6 +27,12 @@ import {
   User,
   UserPlus,
   Users,
+  Clock,
+  Forward,
+  MoreVertical,
+  Reply,
+  ReplyAll,
+  Clock3
 } from "lucide-react"
 import {
   DropdownMenu,
@@ -69,6 +67,12 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+import { Calendar } from "@/components/ui/calendar"
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip"
 import { AccountSwitcher } from "@/components/account-switcher"
 import { ChatDisplay } from "@/components/chat-display"
@@ -77,12 +81,24 @@ import { Nav } from "@/components/nav"
 // import { type Mail } from "@/app/(app)/examples/mail/data"
 // import { useChat } from "@/components/dashboard/use-chat.js"
 import { Button } from "./ui/button"
-import { useNavigate } from "react-router-dom"
+import { Routes, Route, useNavigate, Outlet } from "react-router-dom"
 import axios from "axios"
 import { AuthContext } from "./AuthContext"
 import { ChatsProvider, useChats } from './ChatsContext';
 import { useTheme } from "./theme-provider"
-import { io } from "socket.io-client"
+// import { io } from "socket.io-client
+import addDays from "date-fns/addDays"
+import addHours from "date-fns/addHours"
+import format from "date-fns/format"
+import nextSaturday from "date-fns/nextSaturday"
+import { Label } from "./ui/label"
+import NewChatDialog from "./NewChatDialog"
+
+
+// import {
+//   DropdownMenuContent,
+//   DropdownMenuItem,
+// } from "@/components/ui/dropdown-menu"
 
 // import { TooltipTrigger } from "@radix-ui/react-tooltip"
 
@@ -101,22 +117,29 @@ export function Chats({
   const { state, dispatch } = useChats();
   const { theme, setTheme } = useTheme();
   // const [chat] = useChat(null);
+  const today = new Date()
   const navigate = useNavigate();
+  // React.useEffect(() => {
+  //   checkLoginState()
+  // }, [checkLoginState])
   React.useEffect(() => {
-    checkLoginState()
-  }, [checkLoginState])
+    console.log(user)
+    // dispatch({ type: 'SELECT_CHAT', payload: null });
+
+    //   checkLoginState()
+  }, [])
   React.useEffect(() => {
-    if (!loggedIn) navigate('/login')
-      // console.log(user.)
+    // if (!loggedIn) navigate('/login')
+    // console.log(user.)
   }, [loggedIn, checkLoginState, navigate]);
   React.useEffect(() => {
     console.log('chats')
-    if (state.user === null) return;
+    // if (state.user === null) return;
     async function setState() {
       try {
-        const res = await axios.get('http://localhost:5000/chats/chats', { withCredentials: true });
-        console.log(res)
-        dispatch({ type: 'SET_CHATS', payload: res.data });
+        // const res = await axios.get('http://localhost:5000/chats/chats', { withCredentials: true });
+        // console.log(res)
+        // dispatch({ type: 'SET_CHATS', payload: res.data });
         dispatch({ type: 'SET_SOCKET', payload: socket })
         // console.log('from try')
       }
@@ -134,7 +157,7 @@ export function Chats({
     return () => {
       socket.disconnect();
     }
-    
+
   }, [])
   // React.useEffect(() => {
   //   console.log(state.chats)
@@ -382,24 +405,29 @@ export function Chats({
             </Tooltip>
           </nav>
         </aside>
+
         <ResizablePanel defaultSize={defaultLayout[1]} minSize={30}>
+
           <Tabs defaultValue="all">
-            <div className="flex items-center px-4 py-2">
+            <div className="flex justify-between items-center px-4 py-2">
               <h1 className="text-xl font-bold">Inbox</h1>
-              <TabsList className="ml-auto">
-                <TabsTrigger
-                  value="all"
-                  className="text-zinc-600 dark:text-zinc-200"
-                >
-                  All mail
-                </TabsTrigger>
-                <TabsTrigger
-                  value="unread"
-                  className="text-zinc-600 dark:text-zinc-200"
-                >
-                  Unread
-                </TabsTrigger>
-              </TabsList>
+              <div className="flex gap-3">
+                <TabsList className="ml-auto">
+                  <TabsTrigger
+                    value="all"
+                    className="text-zinc-600 dark:text-zinc-200"
+                  >
+                    All mail
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="unread"
+                    className="text-zinc-600 dark:text-zinc-200"
+                  >
+                    Unread
+                  </TabsTrigger>
+                </TabsList>
+                <NewChatDialog />
+              </div>
             </div>
             <Separator />
             <div className="bg-background/95 p-4 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -418,12 +446,156 @@ export function Chats({
             </TabsContent>
           </Tabs>
         </ResizablePanel>
+
         <ResizableHandle withHandle />
+
         <ResizablePanel defaultSize={defaultLayout[2]}>
-          <ChatDisplay
-            mail={state.chats.find((item) => item.id === state.selectedChat) || null}
-          />
+          <div className={`h-${state.selectedChat ? 'full' : 'screen'} flex flex-col`}>
+            <div className="flex items-center p-2">
+              <div className="flex items-center gap-2">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" disabled={!state.selectedChat}>
+                      <Archive className="h-4 w-4" />
+                      <span className="sr-only">Archive</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Archive</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" disabled={!state.selectedChat}>
+                      <ArchiveX className="h-4 w-4" />
+                      <span className="sr-only">Move to junk</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Move to junk</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" disabled={!state.selectedChat}>
+                      <Trash2 className="h-4 w-4" />
+                      <span className="sr-only">Move to trash</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Move to trash</TooltipContent>
+                </Tooltip>
+                <Separator orientation="vertical" className="mx-1 h-6" />
+                <Tooltip>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon" disabled={!state.selectedChat}>
+                          <Clock className="h-4 w-4" />
+                          <span className="sr-only">Snooze</span>
+                        </Button>
+                      </TooltipTrigger>
+                    </PopoverTrigger>
+                    <PopoverContent className="flex w-[535px] p-0">
+                      <div className="flex flex-col gap-2 border-r px-2 py-4">
+                        <div className="px-4 text-sm font-medium">Snooze until</div>
+                        <div className="grid min-w-[250px] gap-1">
+                          <Button
+                            variant="ghost"
+                            className="justify-start font-normal"
+                          >
+                            Later today{" "}
+                            <span className="ml-auto text-muted-foreground">
+                              {format(addHours(today, 4), "E, h:m b")}
+                            </span>
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            className="justify-start font-normal"
+                          >
+                            Tomorrow
+                            <span className="ml-auto text-muted-foreground">
+                              {format(addDays(today, 1), "E, h:m b")}
+                            </span>
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            className="justify-start font-normal"
+                          >
+                            This weekend
+                            <span className="ml-auto text-muted-foreground">
+                              {format(nextSaturday(today), "E, h:m b")}
+                            </span>
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            className="justify-start font-normal"
+                          >
+                            Next week
+                            <span className="ml-auto text-muted-foreground">
+                              {format(addDays(today, 7), "E, h:m b")}
+                            </span>
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="p-2">
+                        <Calendar />
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                  <TooltipContent>Snooze</TooltipContent>
+                </Tooltip>
+              </div>
+              <div className="ml-auto flex items-center gap-2">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" disabled={!state.selectedChat}>
+                      <Reply className="h-4 w-4" />
+                      <span className="sr-only">Reply</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Reply</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" disabled={!state.selectedChat}>
+                      <ReplyAll className="h-4 w-4" />
+                      <span className="sr-only">Reply all</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Reply all</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" disabled={!state.selectedChat}>
+                      <Forward className="h-4 w-4" />
+                      <span className="sr-only">Forward</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Forward</TooltipContent>
+                </Tooltip>
+              </div>
+              <Separator orientation="vertical" className="mx-2 h-6" />
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" disabled={!state.selectedChat}>
+                    <MoreVertical className="h-4 w-4" />
+                    <span className="sr-only">More</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem>Mark as unread</DropdownMenuItem>
+                  <DropdownMenuItem>Star thread</DropdownMenuItem>
+                  <DropdownMenuItem>Add label</DropdownMenuItem>
+                  <DropdownMenuItem>Mute thread</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+            <Separator />
+            {!state.selectedChat && (
+              <div className="p-8 text-center text-muted-foreground">
+                No message selected
+              </div>
+            )}
+            <Outlet />
+          </div>
         </ResizablePanel>
+
       </ResizablePanelGroup>
     </TooltipProvider>
   )

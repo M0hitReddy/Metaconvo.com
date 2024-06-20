@@ -1,5 +1,5 @@
 import React, { useContext, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom';
+import { Outlet, useNavigate } from 'react-router-dom';
 import { AuthContext } from './AuthContext';
 import { Button } from './ui/button';
 import axios from 'axios';
@@ -380,6 +380,7 @@ export default function Dashboard() {
 
                     </div>
                 </div>
+                <Outlet />
             </TooltipProvider>
 
         </>

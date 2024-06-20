@@ -15,7 +15,7 @@ const setEvents = (socket) => {
     socket.on('send-message', ({ sender, receiver, message }) => {
         if (users[receiver]) {
             console.log(users[receiver], "socket on send message");
-            io.to(users[receiver]).emit('receive-message', { sender, message: message });
+            io.to(users[receiver]).emit('receive-message', { sender, receiver, message: message });
         }
     });
     socket.on('get-users', () => {

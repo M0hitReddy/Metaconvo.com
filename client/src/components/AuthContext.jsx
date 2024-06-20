@@ -3,15 +3,16 @@ import React, { createContext, useState, useEffect, useCallback } from 'react'
 const AuthContext = createContext()
 const AuthContextProvider = ({ children }) => {
     const [loggedIn, setLoggedIn] = useState(null)
-    const [user, setUser] = useState('nullll')
+    const [user, setUser] = useState(null)
     // const socket = null;
     const checkLoginState = useCallback(async () => {
         try {
             const {
                 data: { loggedIn: logged_in, user }
-            } = await axios.get(`http://localhost:5000/auth/logged_in`, {withCredentials: true})
+            } = await axios.get(`http://localhost:5000/auth/logged_in`, { withCredentials: true })
             // console.log(logged_in);
             setLoggedIn(logged_in)
+            console.log(user)
             // socket = useMemo(() => io('http://localhost:5000'), []);
             user && setUser(user)
         } catch (err) {

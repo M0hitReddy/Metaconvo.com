@@ -5,7 +5,7 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "start": "node server.js",
+    "start": "node index.js",
     "dev": "nodemon index.js"
   },
   "keywords": [],
@@ -23,8 +23,10 @@
     "googleapis": "^134.0.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.3.3",
+    "mysql": "^2.18.1",
     "query-string": "^9.0.0",
     "request": "^2.88.2",
-    "socket.io": "^4.7.5"
+    "socket.io": "^4.7.5",
+    "uuid": "^9.0.1"
   }
 }

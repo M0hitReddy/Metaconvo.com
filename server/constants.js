@@ -8,7 +8,7 @@ const googleConfig = {
     redirectUrl: process.env.REDIRECT_URL,
     clientUrl: process.env.CLIENT_URL ,
     tokenSecret: process.env.TOKEN_SECRET,
-    tokenExpiration: 36000000,
+    tokenExpiration: 360000000,
     postUrl: 'https://jsonplaceholder.typicode.com/posts',
 }
 

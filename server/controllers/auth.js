@@ -2,7 +2,9 @@ import queryString from 'query-string'
 import googleConfig from '../constants.js';
 import jwt from 'jsonwebtoken';
 import axios from 'axios';
-import { dummyUsers } from '../sockets/users.js';
+// import { dummyUsers } from '../sockets/users.js';
+import connection from '../db/db.js';
+import { v4 as uuidv4 } from 'uuid';
 const loggedIn = (req, res) => {
     try {
         const token = req.cookies.token;
@@ -12,20 +14,21 @@ const loggedIn = (req, res) => {
             return;
         }
         const { user } = jwt.verify(token, googleConfig.tokenSecret);
+        console.log(user, "user 17")
         const newToken = jwt.sign({ user }, googleConfig.tokenSecret, { expiresIn: googleConfig.tokenExpiration });
         // const user = { email, name, picture, id: "6c84fb90-12c4-11e1-840d-7b25c5ee775a" + Math.floor(Math.random() * 1000) };
-        const newUser = {
-            id: "6c84fb90-12c4-11e1-840d-7b25c5ee775a" + (user.email.substring(0,1) === 'm' ? '1' : '2'),
-            name: user.name,
-            email:user.email,
-            subject: "Meeting Tomorrow",
-            text: "Hi, let's have a meeting tomorrow to discuss the project. I've been reviewing the project details and have some ideas I'd like to share. It's crucial that we align on our next steps to ensure the project's success.\n\nPlease come prepared with any questions or insights you may have. Looking forward to our meeting!\n\nBest regards, William",
-            date: "2023-10-22T09:00:00",
-            read: true,
-            labels: ["meeting", "work", "important"],
-        };
-        const users = dummyUsers.filter(user => user.email === newUser.email);
-        if (users.length === 0) dummyUsers.push(newUser);
+        // const newUser = {
+        //     id: "6c84fb90-12c4-11e1-840d-7b25c5ee775a" + (user.email.substring(0, 5) === 'mohit' ? '1' : user.email.substring(0, 2) === 'me' ? '3' : '2'),
+        //     name: user.name,
+        //     email: user.email,
+        //     subject: "Meeting Tomorrow",
+        //     text: "Hi, let's have a meeting tomorrow to discuss the project. I've been reviewing the project details and have some ideas I'd like to share. It's crucial that we align on our next steps to ensure the project's success.\n\nPlease come prepared with any questions or insights you may have. Looking forward to our meeting!\n\nBest regards, William",
+        //     date: "2023-10-22T09:00:00",
+        //     read: true,
+        //     labels: ["meeting", "work", "important"],
+        // };
+        // const users = dummyUsers.filter(user => user.email === newUser.email);
+        // if (users.length === 0) dummyUsers.push(newUser);
         res.cookie('token', newToken, {
             maxAge: googleConfig.tokenExpiration,
             // encode: String,
@@ -33,7 +36,7 @@ const loggedIn = (req, res) => {
             httpOnly: true,
             // secure: true
         });
-        res.json({ loggedIn: true, user:{...user,id:newUser.id} });
+        res.json({ loggedIn: true, user });
     }
     catch (err) {
         res.json({ loggedIn: false });
@@ -72,33 +75,85 @@ const token = async (req, res) => {
         } = await axios.post(`${googleConfig.tokenUrl}?${params}`)
         // console.log(id_token, "id_token");
         const { email, name, picture } = jwt.decode(id_token);
-        const user = { email, name, picture, id: "6c84fb90-12c4-11e1-840d-7b25c5ee775a"+ (email.substring(0,1) === 'm' ? '1' : '2')};
-        const newUser = {
-            id: user.id,
-            name,
-            email,
-            subject: "Meeting Tomorrow",
-            text: "Hi, let's have a meeting tomorrow to discuss the project. I've been reviewing the project details and have some ideas I'd like to share. It's crucial that we align on our next steps to ensure the project's success.\n\nPlease come prepared with any questions or insights you may have. Looking forward to our meeting!\n\nBest regards, William",
-            date: "2023-10-22T09:00:00",
-            read: true,
-            labels: ["meeting", "work", "important"],
-        };
-        const users = dummyUsers.filter(user => user.email === user.email);
-        if (users.length === 0) dummyUsers.push(newUser);
+        // const password = ;
+        console.log(jwt.decode(id_token), 'id from google')
+        const user = { email, name, picture, id: null };
+        const userId = uuidv4();
+        const query = 'INSERT INTO Users (UserID, Username, Password, Email, ProfilePicture) VALUES (?, ?, ?, ?, ?)';
+        connection.query('select * from users where email = ?', [email], (err, result) => {
+            if (err) {
+                console.log('error fetching');
+                // throw err;
+            }
+            else {
+                if (result.length > 0) {
+                    console.log('user already exists, so not adding to db');
+                    user.id = result[0].id;
+                    console.log(user, "user 92");
+                    console.log(user, "user");
+                    const token = jwt.sign({ user }, googleConfig.tokenSecret, { expiresIn: googleConfig.tokenExpiration });
+                    // console.log((token), "token client side");
+                    res.cookie('token', token
+                        , {
+                            maxAge: googleConfig.tokenExpiration,
+                            httpOnly: true,
+                            // encode: String,
+                            // path: '/',
+                            // secure: true
+                        }
+                    ).json({ token: token, user });
+                }
+                else {
+                    connection.query(query, [userId, email, userId, email, picture], (err, result) => {
+                        if (err) {
+                            console.log('error inserting');
+                            // throw err;
+                        }
+                        console.log('User inserted successfully!', result.insertId);
+                    });
+                }
+
+            }
+            // console.log(result, "result");
+            // if (result.length > 0) console.log('user already exists, so not adding to db');
+            // else {
+            // }
+        });
+        // connection.query(query, [userId, email, userId, email, picture], (err, result) => {
+        //     if (err) {
+        //         console.log('user already exists, so not adding to db');
+        //         // throw err;
+        //     }
+        //     console.log('User inserted successfully!');
+        // });
+
+        // const user = { email, name, picture, id: userId };
+        // const newUser = {
+        //     id: user.id,
+        //     name,
+        //     email,
+        //     subject: "Meeting Tomorrow",
+        //     text: "Hi, let's have a meeting tomorrow to discuss the project. I've been reviewing the project details and have some ideas I'd like to share. It's crucial that we align on our next steps to ensure the project's success.\n\nPlease come prepared with any questions or insights you may have. Looking forward to our meeting!\n\nBest regards, William",
+        //     date: "2023-10-22T09:00:00",
+        //     read: true,
+        //     labels: ["meeting", "work", "important"],
+        // };
+        // const users = dummyUsers.filter(user => user.email === user.email);
+        // if (users.length === 0) dummyUsers.push(newUser);
         // dummyUsers.push(newUser);
         // console.log(newUser, "dummyUsers");
-        console.log(user, "user");
-        const token = jwt.sign({ user }, googleConfig.tokenSecret, { expiresIn: googleConfig.tokenExpiration });
-        // console.log((token), "token client side");
-        res.cookie('token', token
-            , {
-                maxAge: googleConfig.tokenExpiration,
-                httpOnly: true,
-                // encode: String,
-                // path: '/',
-                // secure: true
-            }
-        ).json({ token: token, user });
+        // console.log(user, "user");
+        // const token = jwt.sign({ user }, googleConfig.tokenSecret, { expiresIn: googleConfig.tokenExpiration });
+        // // console.log((token), "token client side");
+        // res.cookie('token', token
+        //     , {
+        //         maxAge: googleConfig.tokenExpiration,
+        //         httpOnly: true,
+        //         // encode: String,
+        //         // path: '/',
+        //         // secure: true
+        //     }
+        // ).json({ token: token, user });
         // res.json({token:token, user });
     }
     catch (err) {
